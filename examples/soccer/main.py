@@ -330,7 +330,10 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         source_path=source_video_path, stride=STRIDE)
 
     crops = []
+    frame_count = 0
     for frame in tqdm(frame_generator, desc='collecting crops'):
+        frame_count += 1
+        print(frame_count)
         result = player_detection_model(frame, imgsz=1280, verbose=False)[0]
         detections = sv.Detections.from_ultralytics(result)
         crops += get_crops(frame, detections[detections.class_id == PLAYER_CLASS_ID])
@@ -374,6 +377,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
 
         h, w, _ = frame.shape
         radar = render_radar(detections, keypoints, color_lookup)
+
         radar = sv.resize_image(radar, (w // 2, h // 2))
         radar_h, radar_w, _ = radar.shape
         rect = sv.Rect(
