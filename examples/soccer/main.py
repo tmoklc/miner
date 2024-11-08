@@ -25,7 +25,7 @@ GOALKEEPER_CLASS_ID = 1
 PLAYER_CLASS_ID = 2
 REFEREE_CLASS_ID = 3
 
-STRIDE = 60
+STRIDE = 20
 CONFIG = SoccerPitchConfiguration()
 
 COLORS = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
@@ -337,6 +337,8 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         result = player_detection_model(frame, imgsz=1280, verbose=False)[0]
         detections = sv.Detections.from_ultralytics(result)
         crops += get_crops(frame, detections[detections.class_id == PLAYER_CLASS_ID])
+
+
 
     team_classifier = TeamClassifier(device=device)
     team_classifier.fit(crops)
