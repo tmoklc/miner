@@ -393,23 +393,23 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         annotated_frame = frame.copy()
         annotated_frame = ELLIPSE_ANNOTATOR.annotate(
             annotated_frame, detections, custom_color_lookup=color_lookup)
-        annotated_frame = ELLIPSE_LABEL_ANNOTATOR.annotate(
-            annotated_frame, detections, labels,
-            custom_color_lookup=color_lookup)
+        # annotated_frame = ELLIPSE_LABEL_ANNOTATOR.annotate(
+        #     annotated_frame, detections, labels,
+        #     custom_color_lookup=color_lookup)
 
         h, w, _ = frame.shape
         radar = render_radar(detections, keypoints, color_lookup)
 
-        radar = sv.resize_image(radar, (w // 2, h // 2))
-        radar_h, radar_w, _ = radar.shape
+        radar_resized = sv.resize_image(radar, (w // 2, h // 2))
+        radar_h, radar_w, _ = radar_resized.shape
         rect = sv.Rect(
             x=w // 2 - radar_w // 2,
             y=h - radar_h,
             width=radar_w,
             height=radar_h
         )
-        annotated_frame = sv.draw_image(annotated_frame, radar, opacity=0.5, rect=rect)
-        yield annotated_frame
+        annotated_frame = sv.draw_image(annotated_frame, radar_resized, opacity=0.5, rect=rect)
+        yield [annotated_frame, radar]
 
 
 def main(source_video_path: str, target_video_path: str, device: str, mode: Mode) -> None:
@@ -433,16 +433,25 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
             source_video_path=source_video_path, device=device)
     else:
         raise NotImplementedError(f"Mode {mode} is not implemented.")
-
     video_info = sv.VideoInfo.from_video_path(source_video_path)
-    with sv.VideoSink(target_video_path, video_info) as sink:
-        for frame in frame_generator:
-            sink.write_frame(frame)
+    if mode == Mode.RADAR:
+        with sv.VideoSink(target_video_path, video_info) as sink:
+            for frame in frame_generator:
+                sink.write_frame(frame[0])
 
-            cv2.imshow("frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-        cv2.destroyAllWindows()
+                cv2.imshow("frame", frame[0])
+                cv2.imshow("radar", frame[1])
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+    else:
+        with sv.VideoSink(target_video_path, video_info) as sink:
+            for frame in frame_generator:
+                sink.write_frame(frame)
+
+                cv2.imshow("frame", frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
