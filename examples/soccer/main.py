@@ -38,7 +38,7 @@ VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
     text_padding=5,
 )
 VERTEX_ANNOTATOR = sv.VertexAnnotator(
-    color=sv.Color.GREEN, radious=5
+    color=sv.Color.GREEN, radius=5
     )
 EDGE_ANNOTATOR = sv.EdgeAnnotator(
     color=sv.Color.from_hex('#FF1493'),
