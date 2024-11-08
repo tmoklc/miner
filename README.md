@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1>sports</h1>
+  <h1>sports-analytics</h1>
 
 [notebooks](https://github.com/roboflow/notebooks) | [inference](https://github.com/roboflow/inference) | [autodistill](https://github.com/autodistill/autodistill) | [maestro](https://github.com/roboflow/multimodal-maestro)
 
