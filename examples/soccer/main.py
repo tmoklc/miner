@@ -330,6 +330,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         source_path=source_video_path, stride=STRIDE)
 
     crops = []
+    tracker_id_to_team_id = {}
     frame_count = 0
     for frame in tqdm(frame_generator, desc='collecting crops'):
         frame_count += 1
@@ -351,10 +352,29 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         result = player_detection_model(frame, imgsz=1280, verbose=False)[0]
         detections = sv.Detections.from_ultralytics(result)
         detections = tracker.update_with_detections(detections)
-
+        
         players = detections[detections.class_id == PLAYER_CLASS_ID]
-        crops = get_crops(frame, players)
-        players_team_id = team_classifier.predict(crops)
+        player_tracker_ids = players.tracker_id
+
+        new_tracker_ids = []
+        new_crops = []
+
+        for i, tracker_id in enumerate(player_tracker_ids):
+            if tracker_id not in tracker_id_to_team_id:
+                # Need to classify
+                crop = get_crops(frame, players[i:i+1])[0]  # Get the crop for this player
+                new_crops.append(crop)
+                new_tracker_ids.append(tracker_id)
+
+        if new_crops:
+            new_team_ids = team_classifier.predict(new_crops)
+            for tracker_id, team_id in zip(new_tracker_ids, new_team_ids):
+                tracker_id_to_team_id[tracker_id] = team_id
+
+        # Get the team IDs for all players
+        players_team_id = np.array([tracker_id_to_team_id[tracker_id] for tracker_id in player_tracker_ids])
+        # crops = get_crops(frame, players)
+        # players_team_id = team_classifier.predict(crops)
 
         goalkeepers = detections[detections.class_id == GOALKEEPER_CLASS_ID]
         goalkeepers_team_id = resolve_goalkeepers_team_id(
