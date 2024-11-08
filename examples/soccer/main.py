@@ -37,6 +37,9 @@ VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
     text_scale=0.5,
     text_padding=5,
 )
+VERTEX_ANNOTATOR = sv.VertexAnnotator(
+    color=sv.Color.GREEN, radious=5
+    )
 EDGE_ANNOTATOR = sv.EdgeAnnotator(
     color=sv.Color.from_hex('#FF1493'),
     thickness=2,
@@ -396,7 +399,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         annotated_frame = ELLIPSE_LABEL_ANNOTATOR.annotate(
             annotated_frame, detections, labels,
             custom_color_lookup=color_lookup)
-        annotated_frame = EDGE_ANNOTATOR.annotate(annotated_frame, CONFIG.edges)
+        annotated_frame = VERTEX_ANNOTATOR.annotate(annotated_frame, keypoints)
 
         h, w, _ = frame.shape
         radar = render_radar(detections, keypoints, color_lookup)
