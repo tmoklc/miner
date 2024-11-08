@@ -400,6 +400,8 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
             annotated_frame, detections, labels,
             custom_color_lookup=color_lookup)
         annotated_frame = VERTEX_ANNOTATOR.annotate(annotated_frame, keypoints)
+        annotated_frame = VERTEX_LABEL_ANNOTATOR.annotate(
+            annotated_frame, keypoints, CONFIG.labels)
 
         h, w, _ = frame.shape
         radar = render_radar(detections, keypoints, color_lookup)
