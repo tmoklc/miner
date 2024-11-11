@@ -147,6 +147,8 @@ def render_radar(
     print(xy)
     transformed_xy = transformer.transform_points(points=xy)
     print(transformed_xy)
+    print(color_lookup)
+    print(transformed_xy[color_lookup==1])
     radar = draw_pitch(config=CONFIG)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
