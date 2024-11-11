@@ -433,34 +433,50 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
 
 
 def main(source_video_path: str, target_video_path: str, device: str, mode: Mode) -> None:
+    # Check if 'output' directory exists
+    output_dir = os.path.join(os.getcwd(), 'output')
+    if not os.path.exists(output_dir):
+        create_dir = input("The 'output' directory does not exist. Do you want to create it? (y/n): ")
+        if create_dir.lower() == 'y':
+            os.makedirs(output_dir)
+        else:
+            print("Cannot proceed without 'output' directory.")
+            return
+
+    # Update target paths to be inside 'output' directory
+    base_name = os.path.basename(target_video_path)
+    name, ext = os.path.splitext(base_name)
+    target_video_path = os.path.join(output_dir, base_name)
+    target_video_path_radar = os.path.join(output_dir, f"{name}_radar{ext}")
+
+    # Initialize frame generator based on mode
     if mode == Mode.PITCH_DETECTION:
-        frame_generator = run_pitch_detection(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_pitch_detection(source_video_path=source_video_path, device=device)
     elif mode == Mode.PLAYER_DETECTION:
-        frame_generator = run_player_detection(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_player_detection(source_video_path=source_video_path, device=device)
     elif mode == Mode.BALL_DETECTION:
-        frame_generator = run_ball_detection(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_ball_detection(source_video_path=source_video_path, device=device)
     elif mode == Mode.PLAYER_TRACKING:
-        frame_generator = run_player_tracking(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_player_tracking(source_video_path=source_video_path, device=device)
     elif mode == Mode.TEAM_CLASSIFICATION:
-        frame_generator = run_team_classification(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_team_classification(source_video_path=source_video_path, device=device)
     elif mode == Mode.RADAR:
-        frame_generator = run_radar(
-            source_video_path=source_video_path, device=device)
+        frame_generator = run_radar(source_video_path=source_video_path, device=device)
     else:
         raise NotImplementedError(f"Mode {mode} is not implemented.")
+
     video_info = sv.VideoInfo.from_video_path(source_video_path)
+
     if mode == Mode.RADAR:
-        with sv.VideoSink(target_video_path, video_info) as sink:
+        # Create two VideoSink objects for frame and radar videos
+        with sv.VideoSink(target_video_path, video_info) as frame_sink, \
+             sv.VideoSink(target_video_path_radar, video_info) as radar_sink:
             for frame in frame_generator:
-                sink.write_frame(frame[0])
+                frame_sink.write_frame(frame[0])
+                radar_sink.write_frame(frame[1])
 
                 cv2.imshow("frame", frame[0])
-                cv2.imshow("radar", frame[1]) 
+                cv2.imshow("radar", frame[1])
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     else:
@@ -471,6 +487,7 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
+
     cv2.destroyAllWindows()
 
 
