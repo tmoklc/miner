@@ -28,7 +28,7 @@ REFEREE_CLASS_ID = 3
 STRIDE = 20
 CONFIG = SoccerPitchConfiguration()
 
-COLORS = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
+COLORS = ['#d45b53', '#6aa8de', '#FF6347', '#FFD700']
 VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
     color=[sv.Color.from_hex(color) for color in CONFIG.colors],
     text_color=sv.Color.from_hex('#FFFFFF'),
