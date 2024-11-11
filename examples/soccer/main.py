@@ -142,9 +142,11 @@ def render_radar(
         source=keypoints.xy[0][mask].astype(np.float32),
         target=np.array(CONFIG.vertices)[mask].astype(np.float32)
     )
+    # print(detect)
     xy = detections.get_anchors_coordinates(anchor=sv.Position.BOTTOM_CENTER)
+    print(xy)
     transformed_xy = transformer.transform_points(points=xy)
-
+    print(transformed_xy)
     radar = draw_pitch(config=CONFIG)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
