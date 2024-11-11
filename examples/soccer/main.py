@@ -9,7 +9,7 @@ import supervision as sv
 from tqdm import tqdm
 from ultralytics import YOLO
 
-from sports.annotators.soccer import draw_pitch, draw_points_on_pitch, draw_pitch_voronoi_diagram
+from sports.annotators.soccer import draw_pitch, draw_points_on_pitch, draw_pitch_voronoi_diagram, draw_paths_on_pitch
 from sports.common.ball import BallTracker, BallAnnotator
 from sports.common.team import TeamClassifier
 from sports.common.view import ViewTransformer
@@ -162,15 +162,14 @@ def render_radar(
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 3],
         face_color=sv.Color.from_hex(COLORS[3]), radius=20, pitch=radar)
-    radar_mask = radar.copy()
     if len(transformed_xy[color_lookup == 0]) > 0 and len(transformed_xy[color_lookup == 1]) > 0:
-        radar_mask = draw_pitch_voronoi_diagram(config=CONFIG, 
+        radar = draw_pitch_voronoi_diagram(config=CONFIG, 
                                                 team_1_xy = transformed_xy[color_lookup == 0], 
                                                 team_2_xy = transformed_xy[color_lookup == 1],
                                                 team_1_color = sv.Color.from_hex(COLORS[0]),
-                                                team_2_color = sv.Color.from_hex(COLORS[1]), pitch=radar_mask,
-                                                opacity=0.3)
-    return radar, radar_mask
+                                                team_2_color = sv.Color.from_hex(COLORS[1]), pitch=radar,
+                                                opacity=0.6)
+    return radar
 
 
 def run_pitch_detection(source_video_path: str, device: str) -> Iterator[np.ndarray]:
@@ -419,7 +418,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         #     annotated_frame, keypoints, CONFIG.labels)
 
         h, w, _ = frame.shape
-        radar, radar_mask = render_radar(detections, keypoints, color_lookup)
+        radar = render_radar(detections, keypoints, color_lookup)
 
         radar_resized = sv.resize_image(radar, (w // 2, h // 2))
         radar_h, radar_w, _ = radar_resized.shape
@@ -430,7 +429,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
             height=radar_h
         )
         annotated_frame = sv.draw_image(annotated_frame, radar_resized, opacity=0.5, rect=rect)
-        yield [annotated_frame, radar, radar_mask]
+        yield [annotated_frame, radar]
 
 
 def main(source_video_path: str, target_video_path: str, device: str, mode: Mode) -> None:
@@ -461,8 +460,7 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
                 sink.write_frame(frame[0])
 
                 cv2.imshow("frame", frame[0])
-                cv2.imshow("radar", frame[1])
-                cv2.imshow("radar_mask", frame[2])
+                cv2.imshow("radar", frame[1]) 
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     else:
