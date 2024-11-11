@@ -167,7 +167,7 @@ def render_radar(
                                             team_1_xy = transformed_xy[color_lookup == 0], 
                                             team_2_xy = transformed_xy[color_lookup == 1],
                                             team_1_color = sv.Color.from_hex(COLORS[0]),
-                                            team_2_color = sv.Color.from_hex(COLORS[1]))
+                                            team_2_color = sv.Color.from_hex(COLORS[1]), pitch=radar_mask)
     return radar, radar_mask
 
 
