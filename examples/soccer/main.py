@@ -360,6 +360,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
 
     frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
     tracker = sv.ByteTrack(minimum_consecutive_frames=3)
+
     for frame in frame_generator:
         result = pitch_detection_model(frame, verbose=False)[0]
         keypoints = sv.KeyPoints.from_ultralytics(result)
@@ -429,6 +430,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
             height=radar_h
         )
         annotated_frame = sv.draw_image(annotated_frame, radar_resized, opacity=0.5, rect=rect)
+        
         yield [annotated_frame, radar]
 
 
@@ -436,12 +438,7 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
     # Check if 'output' directory exists
     output_dir = os.path.join(os.getcwd(), 'output')
     if not os.path.exists(output_dir):
-        create_dir = input("The 'output' directory does not exist. Do you want to create it? (y/n): ")
-        if create_dir.lower() == 'y':
-            os.makedirs(output_dir)
-        else:
-            print("Cannot proceed without 'output' directory.")
-            return
+        os.makedirs(output_dir)
 
     # Update target paths to be inside 'output' directory
     base_name = os.path.basename(target_video_path)
@@ -482,6 +479,7 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
     else:
         with sv.VideoSink(target_video_path, video_info) as sink:
             for frame in frame_generator:
+                print("in else")
                 sink.write_frame(frame)
 
                 cv2.imshow("frame", frame)
