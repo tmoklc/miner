@@ -162,6 +162,7 @@ def render_radar(
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 3],
         face_color=sv.Color.from_hex(COLORS[3]), radius=20, pitch=radar)
+    radar_mask = draw_pitch(config=CONFIG)
     radar_mask = draw_pitch_voronoi_diagram(config=CONFIG, 
                                             team_1_xy = transformed_xy[color_lookup == 0], 
                                             team_2_xy = transformed_xy[color_lookup == 1],
