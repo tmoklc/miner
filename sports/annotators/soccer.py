@@ -300,7 +300,7 @@ def draw_pitch_voronoi_diagram(
 
     voronoi[control_mask] = team_1_color_bgr
     voronoi[~control_mask] = team_2_color_bgr
-    overlay = np.clip(overlay, 0, 255).astype(np.uint8)
+    # overlay = np.clip(overlay, 0, 255).astype(np.uint8)
     overlay = cv2.addWeighted(voronoi, opacity, pitch, 1 - opacity, 0)
 
     return overlay
