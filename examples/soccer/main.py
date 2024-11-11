@@ -8,6 +8,7 @@ import numpy as np
 import supervision as sv
 from tqdm import tqdm
 from ultralytics import YOLO
+import itertools
 
 from sports.annotators.soccer import draw_pitch, draw_points_on_pitch, draw_pitch_voronoi_diagram, draw_paths_on_pitch
 from sports.common.ball import BallTracker, BallAnnotator
@@ -465,9 +466,24 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
     video_info = sv.VideoInfo.from_video_path(source_video_path)
 
     if mode == Mode.RADAR:
+        # Retrieve the first frame to determine radar frame size
+        first_frame = next(frame_generator)
+        annotated_frame = first_frame[0]
+        radar_frame = first_frame[1]
+
+        # Create video_info for radar frames
+        video_info_radar = sv.VideoInfo(
+            width=radar_frame.shape[1],
+            height=radar_frame.shape[0],
+            fps=video_info.fps
+        )
+
+        # Re-create the frame generator including the first frame
+        frame_generator = itertools.chain([first_frame], frame_generator)
+
         # Create two VideoSink objects for frame and radar videos
         with sv.VideoSink(target_video_path, video_info) as frame_sink, \
-             sv.VideoSink(target_video_path_radar, video_info) as radar_sink:
+             sv.VideoSink(target_video_path_radar, video_info_radar) as radar_sink:
             for frame in frame_generator:
                 frame_sink.write_frame(frame[0])
                 radar_sink.write_frame(frame[1])
