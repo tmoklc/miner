@@ -255,7 +255,7 @@ def run_ball_detection(source_video_path: str, device: str) -> Iterator[np.ndarr
 
 def run_player_tracking(source_video_path: str, device: str) -> Iterator[np.ndarray]:
     """
-    Run player tracking on a video and yield annotated frames with tracked players.
+    Run player' tracking on a video and yield annotated frames with tracked players.
 
     Args:
         source_video_path (str): Path to the source video.
