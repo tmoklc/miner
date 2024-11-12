@@ -409,7 +409,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
 
 
         detections_ball = slicer(frame).with_nms(threshold=0.1)
-        detections_ball = ball_tracker.update(detections)
+        detections_ball = ball_tracker.update(detections_ball)
         
         
         players = detections[detections.class_id == PLAYER_CLASS_ID]
