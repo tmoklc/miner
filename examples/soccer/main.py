@@ -341,6 +341,31 @@ def run_team_classification(source_video_path: str, device: str) -> Iterator[np.
 def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
     player_detection_model = YOLO(PLAYER_DETECTION_MODEL_PATH).to(device=device)
     pitch_detection_model = YOLO(PITCH_DETECTION_MODEL_PATH).to(device=device)
+    ball_detection_model = YOLO(BALL_DETECTION_MODEL_PATH).to(device=device)
+
+
+    # frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
+    # ball_tracker = BallTracker(buffer_size=20)
+    # ball_annotator = BallAnnotator(radius=6, buffer_size=10)
+
+    # def callback(image_slice: np.ndarray) -> sv.Detections:
+    #     result = ball_detection_model(image_slice, imgsz=640, verbose=False)[0]
+    #     return sv.Detections.from_ultralytics(result)
+
+    # slicer = sv.InferenceSlicer(
+    #     callback=callback,
+    #     # overlap_filter_strategy=sv.OverlapFilter.NONE,
+    #     slice_wh=(640, 640),
+    # )
+
+    # for frame in frame_generator:
+    # detections = slicer(frame).with_nms(threshold=0.1)
+    # detections = ball_tracker.update(detections)
+    # annotated_frame = frame.copy()
+    # annotated_frame = ball_annotator.annotate(annotated_frame, detections)
+        # yield annotated_frame
+
+
     frame_generator = sv.get_video_frames_generator(
         source_path=source_video_path, stride=STRIDE)
 
@@ -361,6 +386,19 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
 
     frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
     tracker = sv.ByteTrack(minimum_consecutive_frames=3)
+    ball_tracker = BallTracker(buffer_size=20)
+    ball_annotator = BallAnnotator(radius=6, buffer_size=10)
+
+
+    def callback(image_slice: np.ndarray) -> sv.Detections:
+        result = ball_detection_model(image_slice, imgsz=640, verbose=False)[0]
+        return sv.Detections.from_ultralytics(result)
+
+    slicer = sv.InferenceSlicer(
+        callback=callback,
+        # overlap_filter_strategy=sv.OverlapFilter.NONE,
+        slice_wh=(640, 640),
+    )
 
     for frame in frame_generator:
         result = pitch_detection_model(frame, verbose=False)[0]
@@ -368,6 +406,11 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         result = player_detection_model(frame, imgsz=1280, verbose=False)[0]
         detections = sv.Detections.from_ultralytics(result)
         detections = tracker.update_with_detections(detections)
+
+
+        detections_ball = slicer(frame).with_nms(threshold=0.1)
+        detections_ball = ball_tracker.update(detections)
+        
         
         players = detections[detections.class_id == PLAYER_CLASS_ID]
         player_tracker_ids = players.tracker_id
@@ -415,6 +458,9 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
             custom_color_lookup=color_lookup)
         
         annotated_frame = VERTEX_ANNOTATOR.annotate(annotated_frame, keypoints)
+
+        # annotated_frame = frame.copy()
+        annotated_frame = ball_annotator.annotate(annotated_frame, detections_ball)
 
         # annotated_frame = VERTEX_LABEL_ANNOTATOR.annotate(
         #     annotated_frame, keypoints, CONFIG.labels)
@@ -495,7 +541,7 @@ def main(source_video_path: str, target_video_path: str, device: str, mode: Mode
     else:
         with sv.VideoSink(target_video_path, video_info) as sink:
             for frame in frame_generator:
-                print("in else")
+                # print("in else")
                 sink.write_frame(frame)
 
                 cv2.imshow("frame", frame)
