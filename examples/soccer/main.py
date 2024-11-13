@@ -158,9 +158,9 @@ def render_radar(
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
         face_color=sv.Color.from_hex(COLORS[0]), radius=20, pitch=radar)
-    # radar = draw_points_on_pitch(
-    #     config=CONFIG, xy=transformed_ball_xy[0],
-    #     face_color=sv.Color.from_hex(COLORS[4]), radius=20, pitch=radar)
+    radar = draw_points_on_pitch(
+        config=CONFIG, xy=transformed_ball_xy,
+        face_color=sv.Color.from_hex(COLORS[4]), radius=20, pitch=radar)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 1],
         face_color=sv.Color.from_hex(COLORS[1]), radius=20, pitch=radar)
