@@ -29,7 +29,7 @@ REFEREE_CLASS_ID = 3
 STRIDE = 20
 CONFIG = SoccerPitchConfiguration()
 
-COLORS = ['#d45b53', '#6aa8de', '#FF6347', '#FFD700', '#69d90d']
+COLORS = ['#3849F8', '#E32A28', '#FF6347', '#65C4A2', '#FFFFFF']
 VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
     color=[sv.Color.from_hex(color) for color in CONFIG.colors],
     text_color=sv.Color.from_hex('#FFFFFF'),
@@ -144,39 +144,41 @@ def render_radar(
         source=keypoints.xy[0][mask].astype(np.float32),
         target=np.array(CONFIG.vertices)[mask].astype(np.float32)
     )
-    # print(detect)
     xy = detections.get_anchors_coordinates(anchor=sv.Position.BOTTOM_CENTER)
     ball_xy = detetions_ball.get_anchors_coordinates(anchor=sv.Position.BOTTOM_CENTER)
-    # print(xy)
     transformed_xy = transformer.transform_points(points=xy)
     transformed_ball_xy = transformer.transform_points(points=ball_xy)
-    # print(transformed_ball_xy[0])
-    # print(transformed_xy)
-    # print(color_lookup)
-    print(transformed_xy[color_lookup==1])
+
+    # Filter out referees before drawing
+    players_mask = color_lookup != 3  # Exclude referees
+    
     radar = draw_pitch(config=CONFIG)
+    # Draw team players with smaller radius (15 instead of 20) and no border
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
-        face_color=sv.Color.from_hex(COLORS[0]), radius=20, pitch=radar)
-    radar = draw_points_on_pitch(
-        config=CONFIG, xy=transformed_ball_xy,
-        face_color=sv.Color.from_hex(COLORS[4]), radius=10, pitch=radar)
+        face_color=sv.Color.from_hex(COLORS[0]), radius=15, thickness=0, pitch=radar)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 1],
-        face_color=sv.Color.from_hex(COLORS[1]), radius=20, pitch=radar)
+        face_color=sv.Color.from_hex(COLORS[1]), radius=15, thickness=0, pitch=radar)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 2],
-        face_color=sv.Color.from_hex(COLORS[2]), radius=20, pitch=radar)
-    radar = draw_points_on_pitch(
-        config=CONFIG, xy=transformed_xy[color_lookup == 3],
-        face_color=sv.Color.from_hex(COLORS[3]), radius=20, pitch=radar)
+        face_color=sv.Color.from_hex(COLORS[2]), radius=15, thickness=0, pitch=radar)
+    
+    # Draw Voronoi diagram only for actual players (not referees)
     if len(transformed_xy[color_lookup == 0]) > 0 and len(transformed_xy[color_lookup == 1]) > 0:
         radar = draw_pitch_voronoi_diagram(config=CONFIG, 
-                                                team_1_xy = transformed_xy[color_lookup == 0], 
-                                                team_2_xy = transformed_xy[color_lookup == 1],
-                                                team_1_color = sv.Color.from_hex(COLORS[0]),
-                                                team_2_color = sv.Color.from_hex(COLORS[1]), pitch=radar,
-                                                opacity=0.6)
+                                         team_1_xy = transformed_xy[color_lookup == 0], 
+                                         team_2_xy = transformed_xy[color_lookup == 1],
+                                         team_1_color = sv.Color.from_hex(COLORS[0]),
+                                         team_2_color = sv.Color.from_hex(COLORS[1]), 
+                                         pitch=radar,
+                                         opacity=0.6)
+    
+    # Draw ball last so it's always on top
+    radar = draw_points_on_pitch(
+        config=CONFIG, xy=transformed_ball_xy,
+        face_color=sv.Color.from_hex(COLORS[4]), radius=8, thickness=0, pitch=radar)
+    
     return radar
 
 

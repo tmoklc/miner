@@ -9,8 +9,8 @@ from sports.configs.soccer import SoccerPitchConfiguration
 
 def draw_pitch(
     config: SoccerPitchConfiguration,
-    background_color: sv.Color = sv.Color(34, 139, 34),
-    line_color: sv.Color = sv.Color.WHITE,
+    background_color: sv.Color = sv.Color(249, 248, 246),
+    line_color: sv.Color = sv.Color(159, 152, 149),
     padding: int = 50,
     line_thickness: int = 4,
     point_radius: int = 8,
@@ -234,6 +234,7 @@ def draw_pitch_voronoi_diagram(
     opacity: float = 0.5,
     padding: int = 50,
     scale: float = 0.1,
+    max_blur_kernel: int = 51,
     pitch: Optional[np.ndarray] = None
 ) -> np.ndarray:
     """
@@ -257,6 +258,8 @@ def draw_pitch_voronoi_diagram(
             Defaults to 50.
         scale (float, optional): Scaling factor for the pitch dimensions.
             Defaults to 0.1.
+        max_blur_kernel (int, optional): Size of the Gaussian blur kernel.
+            Defaults to 51.
         pitch (Optional[np.ndarray], optional): Existing pitch image to draw the
             Voronoi diagram on. If None, a new pitch will be created. Defaults to None.
 
@@ -296,11 +299,29 @@ def draw_pitch_voronoi_diagram(
     min_distances_team_1 = np.min(distances_team_1, axis=0)
     min_distances_team_2 = np.min(distances_team_2, axis=0)
 
-    control_mask = min_distances_team_1 < min_distances_team_2
-
-    voronoi[control_mask] = team_1_color_bgr
-    voronoi[~control_mask] = team_2_color_bgr
-    # overlay = np.clip(overlay, 0, 255).astype(np.uint8)
-    overlay = cv2.addWeighted(voronoi, opacity, pitch, 1 - opacity, 0)
+    min_distance_to_player = np.minimum(min_distances_team_1, min_distances_team_2)
+    
+    max_distance = np.max(min_distance_to_player)
+    normalized_distances = min_distance_to_player / max_distance
+    
+    distance_diff = min_distances_team_2 - min_distances_team_1
+    control_weights = 1 / (1 + np.exp(-distance_diff * 0.1))
+    
+    blended = (
+        control_weights[..., None] * team_1_color_bgr +
+        (1 - control_weights[..., None]) * team_2_color_bgr
+    ).astype(np.uint8)
+    
+    result = np.zeros_like(blended)
+    for blur_size in range(1, max_blur_kernel, 2):
+        blur_mask = (normalized_distances >= (blur_size / max_blur_kernel))
+        
+        blurred = cv2.GaussianBlur(blended, (blur_size, blur_size), 0)
+        result = np.where(blur_mask[..., None], blurred, result)
+    
+    sharp_mask = (normalized_distances < (1 / max_blur_kernel))[..., None]
+    result = np.where(sharp_mask, blended, result)
+    
+    overlay = cv2.addWeighted(result, opacity, pitch, 1 - opacity, 0)
 
     return overlay
