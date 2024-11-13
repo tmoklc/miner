@@ -29,7 +29,7 @@ REFEREE_CLASS_ID = 3
 STRIDE = 20
 CONFIG = SoccerPitchConfiguration()
 
-COLORS = ['#d45b53', '#6aa8de', '#FF6347', '#FFD700']
+COLORS = ['#d45b53', '#6aa8de', '#FF6347', '#FFD700', '#05059e']
 VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
     color=[sv.Color.from_hex(color) for color in CONFIG.colors],
     text_color=sv.Color.from_hex('#FFFFFF'),
@@ -150,7 +150,7 @@ def render_radar(
     # print(xy)
     transformed_xy = transformer.transform_points(points=xy)
     transformed_ball_xy = transformer.transform_points(points=ball_xy)
-    print(transformed_ball_xy)
+    print(transformed_ball_xy[0])
     # print(transformed_xy)
     # print(color_lookup)
     # print(transformed_xy[color_lookup==1])
@@ -158,6 +158,9 @@ def render_radar(
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
         face_color=sv.Color.from_hex(COLORS[0]), radius=20, pitch=radar)
+    radar = draw_points_on_pitch(
+        config=CONFIG, xy=transformed_ball_xy[0],
+        face_color=sv.Color.from_hex(COLORS[4]), radius=20, pitch=radar)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 1],
         face_color=sv.Color.from_hex(COLORS[1]), radius=20, pitch=radar)
