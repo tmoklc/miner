@@ -150,7 +150,7 @@ def render_radar(
     # print(xy)
     transformed_xy = transformer.transform_points(points=xy)
     transformed_ball_xy = transformer.transform_points(points=ball_xy)
-    print(transformed_ball_xy[0])
+    # print(transformed_ball_xy[0])
     # print(transformed_xy)
     # print(color_lookup)
     print(transformed_xy[color_lookup==1])
