@@ -153,7 +153,7 @@ def render_radar(
     print(transformed_ball_xy[0])
     # print(transformed_xy)
     # print(color_lookup)
-    # print(transformed_xy[color_lookup==1])
+    print(transformed_xy[color_lookup==1])
     radar = draw_pitch(config=CONFIG)
     radar = draw_points_on_pitch(
         config=CONFIG, xy=transformed_xy[color_lookup == 0],
