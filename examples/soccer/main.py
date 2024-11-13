@@ -136,6 +136,7 @@ def resolve_goalkeepers_team_id(
 def render_radar(
     detections: sv.Detections,
     keypoints: sv.KeyPoints,
+    detetions_ball: sv.Detections,
     color_lookup: np.ndarray
 ) -> np.ndarray:
     mask = (keypoints.xy[0][:, 0] > 1) & (keypoints.xy[0][:, 1] > 1)
@@ -145,8 +146,11 @@ def render_radar(
     )
     # print(detect)
     xy = detections.get_anchors_coordinates(anchor=sv.Position.BOTTOM_CENTER)
+    ball_xy = detetions_ball.get_anchors_coordinates(anchor=sv.Position.BOTTOM_CENTER)
     # print(xy)
     transformed_xy = transformer.transform_points(points=xy)
+    transformed_ball_xy = transformer.transform_points(points=ball_xy)
+    print(transformed_ball_xy)
     # print(transformed_xy)
     # print(color_lookup)
     # print(transformed_xy[color_lookup==1])
@@ -466,7 +470,7 @@ def run_radar(source_video_path: str, device: str) -> Iterator[np.ndarray]:
         #     annotated_frame, keypoints, CONFIG.labels)
 
         h, w, _ = frame.shape
-        radar = render_radar(detections, keypoints, color_lookup)
+        radar = render_radar(detections, keypoints, detections_ball, color_lookup)
 
         radar_resized = sv.resize_image(radar, (w // 2, h // 2))
         radar_h, radar_w, _ = radar_resized.shape
