@@ -3,43 +3,22 @@ import requests
 import time
 import json
 
-st.title("Video Processing Test")
+st.title("Video Processing Test with Real-Time Backend Progress")
 
 backend_url = "http://localhost:8000"
 
-process_option = st.radio("Select Video Source", ("Local Video", "Remote Video"))
+source_video_path = st.text_input("Video Path", "")
 device = st.selectbox("Device", ["cpu", "cuda"], index=0)
-
-uploaded_file = None
-video_url = None
-
-if process_option == "Local Video":
-    uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov"])
-else:
-    video_url = st.text_input("Enter a public video URL (S3 or GDrive)")
 
 start_processing = st.button("Start Processing")
 
 if start_processing:
-    # Validate input based on the selection
-    if process_option == "Local Video" and not uploaded_file:
-        st.error("Please upload a video file.")
-    elif process_option == "Remote Video" and not video_url:
-        st.error("Please provide a valid video URL.")
-    else:
-        # Prepare the request
-        if process_option == "Local Video":
-            files = {"file": uploaded_file.getvalue()}
-            data = {"device": device}
-            start_resp = requests.post(f"{backend_url}/process_video", data=data, files=files)
-        else:
-            # Remote video
-            data = {"device": device, "video_url": video_url}
-            start_resp = requests.post(f"{backend_url}/process_video", data=data)
-
+    if source_video_path:
+        # Start processing
+        start_resp = requests.post(f"{backend_url}/process_video", params={"source_video_path": source_video_path, "device": device})
         if start_resp.status_code == 200:
             st.success("Processing started!")
-
+            
             progress_bar = st.progress(0)
             status_placeholder = st.empty()
 
@@ -59,6 +38,7 @@ if start_processing:
                         status_placeholder.text("Processing complete!")
                         break
                     else:
+                        # queued or idle, just display status
                         status_placeholder.text(status)
                 else:
                     st.error("Error fetching progress.")
@@ -78,3 +58,5 @@ if start_processing:
                 st.error("Error fetching final result.")
         else:
             st.error(f"Error starting processing: {start_resp.status_code}, {start_resp.text}")
+    else:
+        st.error("Please provide a valid video path.")

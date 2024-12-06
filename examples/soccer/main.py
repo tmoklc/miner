@@ -1,13 +1,11 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
-from typing import Dict, Any, Optional
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Dict, Any
 import os
 import cv2
 import numpy as np
 import json
 import time
 import threading
-import requests
-import tempfile
 import supervision as sv
 from ultralytics import YOLO
 import numpy as np
@@ -57,7 +55,7 @@ def save_tracking_data_to_json(output_path, data):
     with open(output_path, 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
-def run_radar(video_path: str, device: str):
+def run_radar(source_video_path: str, device: str):
     global processing_state
     processing_state["status"] = "processing"
     processing_state["progress"] = 0
@@ -69,17 +67,18 @@ def run_radar(video_path: str, device: str):
     ball_detection_model = YOLO(BALL_DETECTION_MODEL_PATH).to(device=device)
 
     # Get total frames for progress calculation
-    video_info = sv.VideoInfo.from_video_path(video_path)
+    video_info = sv.VideoInfo.from_video_path(source_video_path)
     total_frames = video_info.total_frames
 
     # First pass: collect crops
     frame_generator = sv.get_video_frames_generator(
-        source_path=video_path, stride=STRIDE)
+        source_path=source_video_path, stride=STRIDE)
 
     crops = []
     tracker_id_to_team_id = {}
     tracking_data = {"frames": []}
 
+    # Just collecting crops for classification
     frame_count = 0
     for frame in frame_generator:
         frame_count += 1
@@ -91,7 +90,7 @@ def run_radar(video_path: str, device: str):
     team_classifier.fit(crops)
 
     # Second pass for full tracking
-    frame_generator = sv.get_video_frames_generator(source_path=video_path)
+    frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
     tracker = sv.ByteTrack(minimum_consecutive_frames=3)
     ball_tracker = BallTracker(buffer_size=20)
 
@@ -185,11 +184,9 @@ def run_radar(video_path: str, device: str):
 app = FastAPI()
 
 @app.post("/process_video")
-async def process_video_endpoint(
-    device: str = Form('cpu'),
-    video_url: Optional[str] = Form(None),
-    file: UploadFile = File(None)
-):
+def process_video_endpoint(source_video_path: str, device: str = 'cpu'):
+    if not os.path.exists(source_video_path):
+        raise HTTPException(status_code=404, detail="Video file not found.")
     if processing_state["status"] == "processing":
         raise HTTPException(status_code=400, detail="Another processing is currently in progress.")
 
@@ -198,32 +195,8 @@ async def process_video_endpoint(
     processing_state["progress"] = 0
     processing_state["result"] = None
 
-    # Determine the video path
-    if video_url:
-        # Download the video to a temp file
-        try:
-            r = requests.get(video_url, stream=True)
-            r.raise_for_status()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error downloading video: {e}")
-
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-        for chunk in r.iter_content(chunk_size=8192):
-            tmp_file.write(chunk)
-        tmp_file.close()
-        video_path = tmp_file.name
-    elif file:
-        # Save the uploaded file locally
-        tmp_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-        contents = await file.read()
-        tmp_file.write(contents)
-        tmp_file.close()
-        video_path = tmp_file.name
-    else:
-        raise HTTPException(status_code=400, detail="No video source provided. Provide either a file or a video_url.")
-
     # Start the background thread
-    thread = threading.Thread(target=run_radar, args=(video_path, device))
+    thread = threading.Thread(target=run_radar, args=(source_video_path, device))
     thread.start()
     return {"message": "Processing started"}
 
@@ -244,6 +217,7 @@ def get_result():
 def download_result():
     if processing_state["status"] != "done":
         raise HTTPException(status_code=400, detail="Processing not completed yet.")
+    # Return the contents of output-data.json as a file download
     if not os.path.exists("output-data.json"):
         raise HTTPException(status_code=404, detail="Output data not found.")
     with open("output-data.json", "rb") as f:
