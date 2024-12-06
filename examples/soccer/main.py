@@ -90,7 +90,7 @@ def run_radar(source_video_path: str, device: str):
     team_classifier.fit(crops)
 
     # Second pass for full tracking
-    frame_generator = sv.get_video_frames_generator(source_video_path=source_video_path)
+    frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
     tracker = sv.ByteTrack(minimum_consecutive_frames=3)
     ball_tracker = BallTracker(buffer_size=20)
 
